@@ -1,11 +1,11 @@
 <template>
   <div class="container mt-4">
     <h1 class="text-center">Cadastral INSPIRE</h1>
-    <h6 class="text-center mb-4"><a href="https://geoinnova.it/">resource</a></h6>
+    <h6 class="text-center mb-4"><a href="https://geoinnova.it/">source</a></h6>
 
     <!-- 🔍 Barra di ricerca -->
     <div class="text-center mb-4">
-      <input type="text" v-model="searchQuery" class="form-control" placeholder="🔍 Cerca una regione..." />
+      <input type="text" v-model="searchQuery" class="form-control" placeholder="🔍 Search region..." />
     </div>
 
     <div v-if="loading" class="text-center">
@@ -105,16 +105,26 @@ export default {
       this.statusMessage = "📥 Download in corso...";
       const zip = new JSZip();
 
+      // Creiamo un oggetto per organizzare i file nelle cartelle corrette
+      const regionFolders = {};
+
       for (const selected of this.selectedProvinces) {
         const [region, province] = selected.split("|");
+
         if (this.municipalities[region] && this.municipalities[region][province]) {
           const municipalities = this.municipalities[region][province];
+
+          // Creiamo una cartella per la regione solo se non esiste
+          if (!regionFolders[region]) {
+            regionFolders[region] = zip.folder(region);
+          }
 
           for (const municipality of municipalities) {
             const fileName = `${municipality}.zip`;
             const fileData = await this.downloadFile(region, province, municipality);
+
             if (fileData) {
-              zip.folder(region).file(fileName, fileData); // 📂 Salva il file nella cartella della regione
+              regionFolders[region].file(fileName, fileData); // 📂 Salva solo i comuni della regione corretta
             }
           }
         }
