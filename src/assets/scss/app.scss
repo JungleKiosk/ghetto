@@ -1,0 +1,41 @@
+@use "./../../../node_modules/bootstrap/scss/bootstrap.scss";
+@use "./partials/_variables.scss" as *;
+
+body.light-mode {
+  background-color: $light;
+  color: $dark;
+}
+
+body.dark-mode {
+  background-color: $dark;
+  color: $light;
+}
+
+body {
+  background-color: $bg_body;
+  color: $light;
+  font-family: monospace;
+  overflow-x: hidden;
+}
+
+body::-webkit-scrollbar {
+  width: 5px;
+}
+
+body::-webkit-scrollbar-thumb {
+  background-color: $bg_body;
+  height: 123px;
+}
+
+body::-webkit-scrollbar-thumb:hover {
+  background-color: #1dc0bb;
+  border-radius: 20px;
+}
+
+body::-webkit-scrollbar-track {
+  border-left: 1px solid $bg_body;
+}
+
+a {
+  color: #1dc0bb;
+}

@@ -1,25 +1,59 @@
 <template>
-  <div class="container">
-    <h1>Scarica i Comuni delle Province</h1>
+  <div class="container mt-4">
+    <h1 class="text-center">Cadastral INSPIRE</h1>
+    <h6 class="text-center mb-4"><a href="https://geoinnova.it/">resource</a></h6>
 
-    <div v-if="loading">Caricamento...</div>
-
-    <div v-else>
-      <div v-for="(provinces, region) in municipalities" :key="region">
-        <h2>{{ region }}</h2>
-        <div v-for="(municipalityList, province) in provinces" :key="province">
-          <input type="checkbox" :id="province" :value="`${region}|${province}`" v-model="selectedProvinces" />
-          <label :for="province">{{ province }}</label>
-        </div>
-      </div>
-
+    <!-- 🔍 Barra di ricerca -->
+    <div class="text-center mb-4">
+      <input type="text" v-model="searchQuery" class="form-control" placeholder="🔍 Cerca una regione..." />
     </div>
 
-    <button @click="startDownload">Scarica Comuni</button>
+    <div v-if="loading" class="text-center">
+      <div class="spinner-border" role="status">
+        <span class="visually-hidden">Caricamento...</span>
+      </div>
+    </div>
 
-    <div v-if="statusMessage">{{ statusMessage }}</div>
+    <div v-else>
+      <div class="row">
+        <div v-for="(provinces, region) in filteredRegions" :key="region"
+          class="col-6 col-lg-2 col-md-6 col-sm-12 mb-4">
+          <div class="card shadow-sm">
+            <div class="card-body">
+              <h5 class="card-title text-center text-primary">{{ region }}</h5>
+              <hr>
+              <div class="province-list">
+                <div v-for="(municipalityList, province) in provinces" :key="province" class="form-check">
+                  <input type="checkbox" :id="province" :value="`${region}|${province}`" v-model="selectedProvinces"
+                    class="form-check-input" />
+                  <label :for="province" class="form-check-label">{{ province }}</label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Messaggio se nessuna regione trovata -->
+        <div v-if="filteredRegions.length === 0" class="text-center mt-3">
+          <p class="text-muted">⚠️ Nessuna regione trovata.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 🚀 Bottone Fisso in Alto a Destra -->
+    <button @click="startDownload" class="btn btn-primary btn-lg fixed-download-btn">
+      Scarica
+    </button>
+
+    <!-- 📌 Status Message Fisso sotto il bottone -->
+    <div v-if="statusMessage" class="fixed-status-message">
+      {{ statusMessage }}
+    </div>
+
   </div>
 </template>
+
+
 
 <script>
 import JSZip from "jszip";
@@ -27,16 +61,32 @@ import JSZip from "jszip";
 export default {
   data() {
     return {
-      municipalities: {},
+      municipalities: {},  // Contiene tutte le regioni e province
       selectedProvinces: [],
       loading: true,
-      statusMessage: ""
+      statusMessage: "",
+      searchQuery: "", // 🔍 Stato per la barra di ricerca
     };
+  },
+  computed: {
+    // 🔍 Filtra le regioni in base alla barra di ricerca
+    filteredRegions() {
+      if (!this.searchQuery) {
+        return this.municipalities; // Mostra tutte le regioni se la ricerca è vuota
+      }
+
+      const query = this.searchQuery.toLowerCase();
+      return Object.fromEntries(
+        Object.entries(this.municipalities).filter(([region]) =>
+          region.toLowerCase().includes(query)
+        )
+      );
+    }
   },
   methods: {
     async fetchMunicipalities() {
       try {
-        const response = await fetch("/api/all_municipalities");  // Ora passa dal proxy
+        const response = await fetch("/api/all_municipalities");
         const data = await response.json();
         console.log("Dati ricevuti:", data);
         this.municipalities = data;
@@ -53,29 +103,25 @@ export default {
       }
 
       this.statusMessage = "📥 Download in corso...";
-      const zip = new JSZip();  // Crea un archivio ZIP
+      const zip = new JSZip();
 
       for (const selected of this.selectedProvinces) {
         const [region, province] = selected.split("|");
-
         if (this.municipalities[region] && this.municipalities[region][province]) {
           const municipalities = this.municipalities[region][province];
 
           for (const municipality of municipalities) {
             const fileName = `${municipality}.zip`;
             const fileData = await this.downloadFile(region, province, municipality);
-
             if (fileData) {
-              zip.file(fileName, fileData);  // Aggiunge il file ZIP al pacchetto
+              zip.folder(region).file(fileName, fileData); // 📂 Salva il file nella cartella della regione
             }
           }
         }
       }
 
-      // Genera il file ZIP completo
       const zipBlob = await zip.generateAsync({ type: "blob" });
 
-      // Scarica il file ZIP
       const zipLink = document.createElement("a");
       zipLink.href = URL.createObjectURL(zipBlob);
       zipLink.download = "comuni_selezionati.zip";
@@ -92,10 +138,10 @@ export default {
         const response = await fetch(url);
         if (!response.ok) throw new Error(`Errore nel download di ${municipality}`);
 
-        // Crea un oggetto blob per il file
-        return await response.blob();  // Ritorna il file ZIP come blob
+        return await response.blob();
       } catch (error) {
         console.error(error);
+        return null;
       }
     }
   },
@@ -106,14 +152,72 @@ export default {
 </script>
 
 <style>
-.container {
-  max-width: 600px;
+/* 🔍 Stile per la barra di ricerca */
+.form-control {
+  max-width: 400px;
   margin: auto;
-  text-align: center;
 }
 
-button {
-  margin-top: 20px;
-  padding: 10px;
+/* 🔹 Stile per il bottone fisso */
+.fixed-download-btn {
+  position: fixed;
+  top: 15px;
+  right: 20px;
+  z-index: 1000;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  font-size: 16px;
+  border-radius: 5px;
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease-in-out;
+}
+
+/* 🔥 Effetto Hover */
+.fixed-download-btn:hover {
+  background-color: #0056b3;
+  transform: scale(1.05);
+}
+
+/* 📌 Stile per il messaggio di stato fisso */
+.fixed-status-message {
+  position: fixed;
+  top: 70px;
+  /* 🔥 Sposta sotto il bottone */
+  right: 20px;
+  z-index: 999;
+  background-color: rgba(255, 255, 255, 0.9);
+  border: 1px solid #007bff;
+  padding: 10px 15px;
+  border-radius: 5px;
+  font-size: 14px;
+  color: #007bff;
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+  min-width: 200px;
+  text-align: center;
+  font-weight: bold;
+  transition: all 0.3s ease-in-out;
+}
+
+/* 🟢 Cambia colore in verde se il download è completato */
+.fixed-status-message:contains("✅") {
+  background-color: rgba(40, 167, 69, 0.9);
+  border-color: #28a745;
+  color: white;
+}
+
+/* 🟡 Cambia colore in giallo se è in corso */
+.fixed-status-message:contains("📥") {
+  background-color: rgba(255, 193, 7, 0.9);
+  border-color: #ffc107;
+  color: white;
+}
+
+/* 🔴 Cambia colore in rosso se c'è un errore */
+.fixed-status-message:contains("⚠️") {
+  background-color: rgba(220, 53, 69, 0.9);
+  border-color: #dc3545;
+  color: white;
 }
 </style>
