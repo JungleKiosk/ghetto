@@ -22,6 +22,8 @@
 </template>
 
 <script>
+import JSZip from "jszip";
+
 export default {
   data() {
     return {
@@ -46,27 +48,40 @@ export default {
     },
     async startDownload() {
       if (this.selectedProvinces.length === 0) {
-        this.statusMessage = "Seleziona almeno una provincia!";
+        this.statusMessage = "⚠️ Seleziona almeno una provincia!";
         return;
       }
 
       this.statusMessage = "📥 Download in corso...";
+      const zip = new JSZip();  // Crea un archivio ZIP
 
-      // Itera sulle province selezionate e scarica tutti i comuni
       for (const selected of this.selectedProvinces) {
-        const [region, province] = selected.split("|"); // Separiamo regione e provincia
+        const [region, province] = selected.split("|");
 
-        // Verifica se la provincia esiste nei dati caricati
         if (this.municipalities[region] && this.municipalities[region][province]) {
           const municipalities = this.municipalities[region][province];
 
           for (const municipality of municipalities) {
-            await this.downloadFile(region, province, municipality);
+            const fileName = `${municipality}.zip`;
+            const fileData = await this.downloadFile(region, province, municipality);
+
+            if (fileData) {
+              zip.file(fileName, fileData);  // Aggiunge il file ZIP al pacchetto
+            }
           }
-        } else {
-          console.warn(`Provincia non trovata nei dati: ${region} - ${province}`);
         }
       }
+
+      // Genera il file ZIP completo
+      const zipBlob = await zip.generateAsync({ type: "blob" });
+
+      // Scarica il file ZIP
+      const zipLink = document.createElement("a");
+      zipLink.href = URL.createObjectURL(zipBlob);
+      zipLink.download = "comuni_selezionati.zip";
+      document.body.appendChild(zipLink);
+      zipLink.click();
+      document.body.removeChild(zipLink);
 
       this.statusMessage = "✅ Download completato!";
     },
@@ -78,13 +93,7 @@ export default {
         if (!response.ok) throw new Error(`Errore nel download di ${municipality}`);
 
         // Crea un oggetto blob per il file
-        const blob = await response.blob();
-        const link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
-        link.download = `${municipality}.zip`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        return await response.blob();  // Ritorna il file ZIP come blob
       } catch (error) {
         console.error(error);
       }
