@@ -88,7 +88,7 @@ export default {
   methods: {
     async fetchMunicipalities() {
       try {
-        const response = await fetch("https://corsproxy.io/?https://iicd.geoinnova.it/all_municipalities"); // URL completo
+        const response = await fetch("https://api.allorigins.win/raw?url=https://iicd.geoinnova.it/all_municipalities"); // URL completo
         const data = await response.json();
         this.municipalities = data;
       } catch (error) {
