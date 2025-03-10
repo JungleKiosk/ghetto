@@ -89,6 +89,7 @@ export default {
     async fetchMunicipalities() {
       try {
         const response = await fetch("https://api.allorigins.win/raw?url=https://iicd.geoinnova.it/all_municipalities"); // URL completo
+  
         const data = await response.json();
         this.municipalities = data;
       } catch (error) {
@@ -138,8 +139,7 @@ export default {
       this.statusMessage = "✅ Download completato!";
     },
     async downloadFile(region, province, municipality) {
-      const url = `https://iicd.geoinnova.it/download/${region}/${province}/${municipality}`;  // URL completo
-
+      const url = `https://api.allorigins.win/raw?url=https://iicd.geoinnova.it/download/${region}/${province}/${municipality}`; // URL completo
       try {
         const response = await fetch(url);
         if (!response.ok) throw new Error(`Errore nel download di ${municipality}`);
