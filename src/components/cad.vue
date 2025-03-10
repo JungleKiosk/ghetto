@@ -7,11 +7,12 @@
     <div v-else>
       <div v-for="(provinces, region) in municipalities" :key="region">
         <h2>{{ region }}</h2>
-        <div v-for="province in Object.keys(provinces)" :key="province">
-          <input type="checkbox" :id="province" :value="[region, province]" v-model="selectedProvinces" />
+        <div v-for="(municipalityList, province) in provinces" :key="province">
+          <input type="checkbox" :id="province" :value="`${region}|${province}`" v-model="selectedProvinces" />
           <label :for="province">{{ province }}</label>
         </div>
       </div>
+
     </div>
 
     <button @click="startDownload">Scarica Comuni</button>
@@ -33,9 +34,9 @@ export default {
   methods: {
     async fetchMunicipalities() {
       try {
-        const response = await fetch("https://iicd.geoinnova.it/all_municipalities");
+        const response = await fetch("/api/all_municipalities");  // Ora passa dal proxy
         const data = await response.json();
-        console.log("Dati ricevuti dall'API:", data);  // Mostra i dati nella console
+        console.log("Dati ricevuti:", data);
         this.municipalities = data;
       } catch (error) {
         this.statusMessage = "Errore di connessione.";
@@ -51,19 +52,26 @@ export default {
 
       this.statusMessage = "📥 Download in corso...";
 
-      // Itera sulle province selezionate e scarica tutti i comuni di ciascuna
-      for (const [region, province] of this.selectedProvinces) {
-        const municipalities = this.municipalities[region][province];
+      // Itera sulle province selezionate e scarica tutti i comuni
+      for (const selected of this.selectedProvinces) {
+        const [region, province] = selected.split("|"); // Separiamo regione e provincia
 
-        for (const municipality of municipalities) {
-          await this.downloadFile(region, province, municipality);
+        // Verifica se la provincia esiste nei dati caricati
+        if (this.municipalities[region] && this.municipalities[region][province]) {
+          const municipalities = this.municipalities[region][province];
+
+          for (const municipality of municipalities) {
+            await this.downloadFile(region, province, municipality);
+          }
+        } else {
+          console.warn(`Provincia non trovata nei dati: ${region} - ${province}`);
         }
       }
 
       this.statusMessage = "✅ Download completato!";
     },
     async downloadFile(region, province, municipality) {
-      const url = `https://iicd.geoinnova.it/download/${region}/${province}/${municipality}`;
+      const url = `/api/download/${region}/${province}/${municipality}`;
 
       try {
         const response = await fetch(url);
