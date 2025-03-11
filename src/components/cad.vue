@@ -59,11 +59,13 @@
         </div>
 
         <!-- Messaggio se nessuna regione trovata -->
-<!--         <div v-if="filteredRegions.length === 0" class="text-center mt-3">
+        <!--         <div v-if="filteredRegions.length === 0" class="text-center mt-3">
           <p class="text-danger">⚠️ Nessuna regione trovata.</p>
         </div> -->
-        <div v-if="Object.keys(filteredRegions).length === 0"
-          class="text-center mt-3">
+        <div
+          v-if="Object.keys(filteredRegions).length === 0"
+          class="text-center mt-3"
+        >
           <p class="text-danger">⚠️ Nessuna regione trovata.</p>
         </div>
       </div>
@@ -111,11 +113,8 @@ export default {
   methods: {
     async fetchMunicipalities() {
       try {
-        const apiUrl = `${apiBaseUrl.replace(/\/$/, "")}/all_municipalities`;
         const response = await fetch(
-          `https://ghetto-backend.onrender.com/proxy?url=${encodeURIComponent(
-            apiUrl
-          )}`
+          `https://ghetto-backend.onrender.com/proxy?url=all_municipalities`
         );
         if (!response.ok) {
           throw new Error(`HTTP error! Status: ${response.status}`);
