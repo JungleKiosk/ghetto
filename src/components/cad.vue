@@ -169,7 +169,7 @@ export default {
       this.statusMessage = "✅ Download completato!";
     },
     async downloadFile(region, province, municipality) {
-      const url = `https://ghettobackend.onrender.com/proxy?url=${encodeURIComponent(
+      const url = `https://-ghettobackend.onrender.com/proxy?url=${encodeURIComponent(
         apiBaseUrl + `/download/${region}/${province}/${municipality}`
       )}`;
  
