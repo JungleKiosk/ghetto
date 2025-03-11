@@ -9,7 +9,12 @@
       <div class="col-lg-4">
         <!-- 🔍 Barra di ricerca -->
         <div class="text-center mb-4">
-          <input type="text" v-model="searchQuery" class="form-control neon-input" placeholder="🔍 Search region..." />
+          <input
+            type="text"
+            v-model="searchQuery"
+            class="form-control neon-input"
+            placeholder="🔍 Search region..."
+          />
         </div>
       </div>
     </div>
@@ -22,17 +27,31 @@
 
     <div v-else>
       <div class="row">
-        <div v-for="(provinces, region) in filteredRegions" :key="region"
-          class="col-6 col-lg-2 col-md-6 col-sm-12 mb-4">
+        <div
+          v-for="(provinces, region) in filteredRegions"
+          :key="region"
+          class="col-6 col-lg-2 col-md-6 col-sm-12 mb-4"
+        >
           <div class="card cyber-card">
             <div class="card-body">
               <h5 class="card-title text-center neon-text">{{ region }}</h5>
               <hr class="neon-divider" />
               <div class="province-list">
-                <div v-for="(municipalityList, province) in provinces" :key="province" class="form-check">
-                  <input type="checkbox" :id="province" :value="`${region}|${province}`" v-model="selectedProvinces"
-                    class="form-check-input neon-checkbox" />
-                  <label :for="province" class="form-check-label neon-label">{{ province }}</label>
+                <div
+                  v-for="(municipalityList, province) in provinces"
+                  :key="province"
+                  class="form-check"
+                >
+                  <input
+                    type="checkbox"
+                    :id="province"
+                    :value="`${region}|${province}`"
+                    v-model="selectedProvinces"
+                    class="form-check-input neon-checkbox"
+                  />
+                  <label :for="province" class="form-check-label neon-label">{{
+                    province
+                  }}</label>
                 </div>
               </div>
             </div>
@@ -55,12 +74,12 @@
     <div v-if="statusMessage" class="fixed-status-message neon-message">
       {{ statusMessage }}
     </div>
-
   </div>
 </template>
 
 <script>
 import JSZip from "jszip";
+const apiBaseUrl = import.meta.env.VITE_API_URL;
 
 export default {
   data() {
@@ -88,8 +107,7 @@ export default {
   methods: {
     async fetchMunicipalities() {
       try {
-        const response = await fetch("https://api.allorigins.win/raw?url=https://iicd.geoinnova.it/all_municipalities"); // URL completo
-  
+        const response = await fetch(`${apiBaseUrl}/all_municipalities`);
         const data = await response.json();
         this.municipalities = data;
       } catch (error) {
@@ -110,7 +128,10 @@ export default {
 
       for (const selected of this.selectedProvinces) {
         const [region, province] = selected.split("|");
-        if (this.municipalities[region] && this.municipalities[region][province]) {
+        if (
+          this.municipalities[region] &&
+          this.municipalities[region][province]
+        ) {
           const municipalities = this.municipalities[region][province];
 
           if (!regionFolders[region]) {
@@ -119,7 +140,11 @@ export default {
 
           for (const municipality of municipalities) {
             const fileName = `${municipality}.zip`;
-            const fileData = await this.downloadFile(region, province, municipality);
+            const fileData = await this.downloadFile(
+              region,
+              province,
+              municipality
+            );
             if (fileData) {
               regionFolders[region].file(fileName, fileData);
             }
@@ -139,16 +164,18 @@ export default {
       this.statusMessage = "✅ Download completato!";
     },
     async downloadFile(region, province, municipality) {
-      const url = `https://api.allorigins.win/raw?url=https://iicd.geoinnova.it/download/${region}/${province}/${municipality}`; // URL completo
+      const url = `${apiBaseUrl}/download/${region}/${province}/${municipality}`;
+
       try {
         const response = await fetch(url);
-        if (!response.ok) throw new Error(`Errore nel download di ${municipality}`);
+        if (!response.ok)
+          throw new Error(`Errore nel download di ${municipality}`);
         return await response.blob();
       } catch (error) {
         console.error(error);
         return null;
       }
-    }
+    },
   },
   mounted() {
     this.fetchMunicipalities();
@@ -158,7 +185,6 @@ export default {
 
 <style>
 /* 🌌 Cyberpunk Style */
-
 
 /* 🌟 Testo Neon */
 .neon-text {
@@ -193,7 +219,6 @@ export default {
   border: 1px solid #00ff44;
   box-shadow: 0 0 10px #00ffaa, 0 0 20px #00d5ff;
 }
-
 
 /* 🔥 Checkbox neon */
 .neon-checkbox {
