@@ -108,11 +108,16 @@ export default {
     async fetchMunicipalities() {
       try {
         const response = await fetch(
-          `https://corsproxy.io/?${encodeURIComponent(apiBaseUrl + "/all_municipalities")}`
+          `https://api.allorigins.win/get?url=${encodeURIComponent(
+            apiBaseUrl + "/all_municipalities"
+          )}`
         );
         const data = await response.json();
-        this.municipalities = data;
+
+        // L'API allOrigins restituisce il contenuto JSON all'interno di un campo "contents"
+        this.municipalities = JSON.parse(data.contents);
       } catch (error) {
+        console.error("Errore fetching dati:", error);
         this.statusMessage = "⚠️ Errore di connessione.";
       } finally {
         this.loading = false;
