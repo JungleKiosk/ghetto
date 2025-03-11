@@ -171,12 +171,15 @@ export default {
       this.statusMessage = "✅ Download completato!";
     },
     async downloadFile(region, province, municipality) {
-      const url = `${apiBaseUrl}/download/${region}/${province}/${municipality}`;
+      const url = `https://api.allorigins.win/raw?url=${encodeURIComponent(
+        apiBaseUrl + `/download/${region}/${province}/${municipality}`
+      )}`;
 
       try {
         const response = await fetch(url);
         if (!response.ok)
           throw new Error(`Errore nel download di ${municipality}`);
+
         return await response.blob();
       } catch (error) {
         console.error(error);
