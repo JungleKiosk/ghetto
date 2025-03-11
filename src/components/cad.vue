@@ -108,14 +108,12 @@ export default {
     async fetchMunicipalities() {
       try {
         const response = await fetch(
-          `https://api.allorigins.win/get?url=${encodeURIComponent(
+          `https://ghetto-backend.onrender.com/proxy?url=${encodeURIComponent(
             apiBaseUrl + "/all_municipalities"
           )}`
         );
         const data = await response.json();
-
-        // L'API allOrigins restituisce il contenuto JSON all'interno di un campo "contents"
-        this.municipalities = JSON.parse(data.contents);
+        this.municipalities = data;
       } catch (error) {
         console.error("Errore fetching dati:", error);
         this.statusMessage = "⚠️ Errore di connessione.";
@@ -171,18 +169,27 @@ export default {
       this.statusMessage = "✅ Download completato!";
     },
     async downloadFile(region, province, municipality) {
-      const url = `https://api.allorigins.win/raw?url=${encodeURIComponent(
+      const url = `https://ghettobackend.onrender.com/proxy?url=${encodeURIComponent(
         apiBaseUrl + `/download/${region}/${province}/${municipality}`
       )}`;
+ 
+      console.log("📥 Tentativo di scaricare:", url);
 
       try {
         const response = await fetch(url);
-        if (!response.ok)
-          throw new Error(`Errore nel download di ${municipality}`);
+        console.log("📡 Risposta ricevuta:", response);
 
-        return await response.blob();
+        if (!response.ok) {
+          throw new Error(
+            `Errore nel download di ${municipality}: ${response.statusText}`
+          );
+        }
+
+        const blob = await response.blob();
+        console.log("✅ File scaricato:", blob);
+        return blob;
       } catch (error) {
-        console.error(error);
+        console.error("❌ Errore nel download:", error);
         return null;
       }
     },
