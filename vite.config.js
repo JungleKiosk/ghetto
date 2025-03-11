@@ -1,5 +1,8 @@
+import { defineConfig } from 'vite'; // ✅ Aggiunto defineConfig
+import vue from '@vitejs/plugin-vue';
+
 export default defineConfig({
-  base: '/',
+  base: '/', // ✅ Corretto per Render
   plugins: [vue()],
   server: {
     proxy: {
