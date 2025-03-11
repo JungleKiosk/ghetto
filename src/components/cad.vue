@@ -107,7 +107,9 @@ export default {
   methods: {
     async fetchMunicipalities() {
       try {
-        const response = await fetch(`${apiBaseUrl}/all_municipalities`);
+        const response = await fetch(
+          `https://corsproxy.io/?${encodeURIComponent(apiBaseUrl + "/all_municipalities")}`
+        );
         const data = await response.json();
         this.municipalities = data;
       } catch (error) {
