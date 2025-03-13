@@ -2,7 +2,7 @@ import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
 
 export default defineConfig({
-  base: '/', // ✅ Assicura che il frontend funzioni su Render senza problemi di path
+  base: '/getto/', // ✅ Assicura che il frontend funzioni su Render senza problemi di path
   plugins: [vue()],
   server: {
     proxy: {
