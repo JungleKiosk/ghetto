@@ -14,7 +14,7 @@
             type="text"
             v-model="searchQuery"
             class="form-control neon-input"
-            placeholder="🔍 Enter at least 2 letetrs..."
+            placeholder="🔍 Enter at least 2 letters..."
           />
         </div>
       </div>
@@ -39,7 +39,7 @@
               <hr class="neon-divider" />
               <div class="province-list">
                 <div
-                  v-for="(municipalityList, province) in provinces"
+                  v-for="province in provinces"
                   :key="province"
                   class="form-check"
                 >
@@ -66,12 +66,12 @@
       </div>
     </div>
 
-    <!-- 🚀 Bottone Fisso in Alto a Destra -->
+    <!-- 🚀 Bottone di download -->
     <button @click="startDownload" class="btn neon-btn fixed-download-btn">
       Scarica
     </button>
 
-    <!-- 📌 Status Message Fisso sotto il bottone -->
+    <!-- 📌 Status Message -->
     <div v-if="statusMessage" class="fixed-status-message neon-message">
       {{ statusMessage }}
     </div>
@@ -79,13 +79,14 @@
 </template>
 
 <script>
+import axios from "axios";
 import JSZip from "jszip";
 
 export default {
   data() {
     return {
-      municipalities: {},
-      selectedProvinces: [],
+      municipalities: {}, // Dati delle province e comuni
+      selectedProvinces: [], // Province selezionate
       loading: true,
       statusMessage: "",
       searchQuery: "",
@@ -107,14 +108,60 @@ export default {
   methods: {
     async fetchMunicipalities() {
       try {
-        const response = await fetch("/api/all_municipalities");
-        const data = await response.json();
-        this.municipalities = data;
+        this.statusMessage = "🔄 Recupero dati catastali...";
+
+        const url = "/api/wfs";
+
+        const response = await axios.get(url, {
+          params: {
+            service: "WFS",
+            version: "2.0.0",
+            request: "GetFeature",
+            typename: "CP.CadastralParcel",
+            outputFormat: "GML2",
+          },
+        });
+
+        console.log("Risposta API:", response.data); // 👀 Log della risposta
+
+        const data = response.data;
+
+        // Controlla se `features` esiste nella risposta
+        if (!data || !data.features) {
+          throw new Error("La risposta API non contiene dati validi!");
+        }
+
+        // Mappa i dati in un formato leggibile
+        const formattedData = this.formatMunicipalityData(data);
+        this.municipalities = formattedData;
+
+        this.statusMessage = "✅ Dati caricati con successo!";
       } catch (error) {
-        this.statusMessage = "⚠️ Errore di connessione.";
+        console.error("Errore nel recupero dei dati:", error);
+        this.statusMessage = "⚠️ Errore di connessione o dati non validi!";
       } finally {
         this.loading = false;
       }
+    },
+    formatMunicipalityData(data) {
+      // Converti la risposta API in un formato organizzato per Regione → Provincia → Comune
+      let structuredData = {};
+
+      data.features.forEach((feature) => {
+        const region = feature.properties.region;
+        const province = feature.properties.province;
+        const municipality = feature.properties.municipality;
+
+        if (!structuredData[region]) {
+          structuredData[region] = {};
+        }
+        if (!structuredData[region][province]) {
+          structuredData[region][province] = [];
+        }
+        structuredData[region][province].push(municipality);
+      });
+
+      return structuredData;
     },
     async startDownload() {
       if (this.selectedProvinces.length === 0) {
@@ -128,6 +175,7 @@ export default {
 
       for (const selected of this.selectedProvinces) {
         const [region, province] = selected.split("|");
+
         if (
           this.municipalities[region] &&
           this.municipalities[region][province]
@@ -139,15 +187,14 @@ export default {
           }
 
           for (const municipality of municipalities) {
-            const fileName = `${municipality}.zip`;
-            const fileData = await this.downloadFile(
-              region,
-              province,
-              municipality
+            const fileName = `${municipality}.json`;
+            const fileData = JSON.stringify(
+              { region, province, municipality },
+              null,
+              2
             );
-            if (fileData) {
-              regionFolders[region].file(fileName, fileData);
-            }
+
+            regionFolders[region].file(fileName, fileData);
           }
         }
       }
@@ -156,24 +203,12 @@ export default {
 
       const zipLink = document.createElement("a");
       zipLink.href = URL.createObjectURL(zipBlob);
-      zipLink.download = "wrap_falaffel.zip";
+      zipLink.download = "cadastral_data.zip";
       document.body.appendChild(zipLink);
       zipLink.click();
       document.body.removeChild(zipLink);
 
       this.statusMessage = "✅ Download completato!";
-    },
-    async downloadFile(region, province, municipality) {
-      const url = `/api/download/${region}/${province}/${municipality}`;
-      try {
-        const response = await fetch(url);
-        if (!response.ok)
-          throw new Error(`Errore nel download di ${municipality}`);
-        return await response.blob();
-      } catch (error) {
-        console.error(error);
-        return null;
-      }
     },
   },
   mounted() {
@@ -190,72 +225,31 @@ body {
   font-family: "Orbitron", sans-serif;
 }
 
-/* 🌟 Testo Neon */
 .neon-text {
   color: #0ff;
   text-shadow: 0 0 10px #0ff, 0 0 20px #00f, 0 0 30px #00f;
-  font-family: monospace;
 }
 
-/* 🔥 Glow effect */
 .neon-btn {
   background-color: #016bff;
   border: none;
-  color: rgb(255, 255, 255);
-  box-shadow: 0 0 10px #00ff7b, 0 0 20px #00d9ff;
-  transition: transform 0.2s ease-in-out;
-}
-.neon-btn:hover {
-  transform: scale(1.1);
-}
-
-/* 🟢 Glow per gli input */
-.neon-input {
-  background-color: #000000;
-  border: 1px solid #00ffcc;
   color: #fff;
-  box-shadow: 0 0 10px #00ffcc;
+  box-shadow: 0 0 10px #00ff7b, 0 0 20px #00d9ff;
 }
 
-/* 🟣 Cards Cyberpunk */
-.cyber-card {
-  background: linear-gradient(145deg, #121212, #1e1e1e);
-  border: 1px solid #00ffcc;
-  box-shadow: 0 0 10px #00ffcc, 0 0 20px #00fffb;
-  transition: transform 0.2s ease-in-out;
-}
-.cyber-card:hover {
-  transform: scale(1.05);
-}
-
-/* 🔥 Checkbox neon */
-.neon-checkbox {
-  accent-color: #00ffcc;
-  box-shadow: 0 0 5px #00ffcc;
-}
-.neon-label {
-  color: #00ffcc;
-}
-
-/* 🚀 Bottone Fisso */
 .fixed-download-btn {
   position: fixed;
   top: 15px;
   right: 20px;
-  z-index: 1000;
 }
 
-/* 📌 Status Message */
 .fixed-status-message {
   position: fixed;
   top: 70px;
   right: 20px;
   background: #000;
   color: #0ff;
-  border: 1px solid #0ff;
-  box-shadow: 0 0 10px #0ff;
   padding: 10px;
   border-radius: 5px;
-  text-align: center;
 }
 </style>
